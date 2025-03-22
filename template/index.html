@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Discussion Agent</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function generateGroups() {
+            $.ajax({
+                url: '/generate_groups',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    discussion_goal: $('#discussion-goal').val(),
+                    group_size: parseInt($('#group-size').val())
+                }),
+                success: function(response) {
+                    let output = '';
+                    response.forEach((group, i) => {
+                        output += `<h3>Group ${i + 1}</h3>`;
+                        output += `<ul>`;
+                        group.forEach(student => {
+                            output += `<li>${student.name}</li>`;
+                        });
+                        output += `</ul>`;
+                    });
+                    $('#group-output').html(output);
+                }
+            });
+        }
+
+        function fetchThemes() {
+            $.ajax({
+                url: '/get_themes',
+                type: 'GET',
+                success: function(response) {
+                    let tableContent = '';
+                    for (let theme in response) {
+                        tableContent += `<tr>
+                            <td>${theme}</td>
+                            <td>${response[theme].join(', ')}</td>
+                            <td><button onclick="editTheme('${theme}')">Edit</button></td>
+                        </tr>`;
+                    }
+                    $('#theme-table').html(tableContent);
+                }
+            });
+        }
+
+        function submitThemes() {
+            // Get current theme data from table
+            let themes = {};
+            $('#theme-table tr').each(function() {
+                let theme = $(this).find('td:first').text();
+                let students = $(this).find('td:nth-child(2)').text().split(', ');
+                themes[theme] = students;
+            });
+
+            $.ajax({
+                url: '/assign_final_prompts',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({refined_themes: themes}),
+                success: function(response) {
+                    alert('Final prompts assigned successfully!');
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>AI Discussion Grouping</h1>
+
+    <label>Discussion Goal:</label>
+    <select id="discussion-goal">
+        <option value="diverse_views">Diverse Views</option>
+        <option value="deepen_shared_ideas">Deepen Shared Ideas</option>
+    </select>
+
+    <label>Group Size:</label>
+    <input type="number" id="group-size" value="3">
+
+    <button onclick="generateGroups()">Generate Groups</button>
+    
+    <h2>Generated Groups</h2>
+    <div id="group-output"></div>
+
+    <h2>Synthesized Themes</h2>
+    <button onclick="fetchThemes()">Get Themes</button>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Theme</th>
+                <th>Students</th>
+                <th>Edit</th>
+            </tr>
+        </thead>
+        <tbody id="theme-table"></tbody>
+    </table>
+
+    <button onclick="submitThemes()">Finalize Themes</button>
+
+    <h2>Final Prompts</h2>
+    <div id="final-prompts"></div>
+
+    </body>
+</html>
