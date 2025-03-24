@@ -3,106 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Discussion Agent</title>
+    <title>AI Discussion Facilitator</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .synthesis-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .synthesis-table th, .synthesis-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .synthesis-table th {
+            background-color: #f4f4f4;
+        }
+        .synthesis-table tr:nth-child(even) {
+            background-color: #f8f8f8;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Step 1: Upload File</h2>
+    <input type="file" id="fileInput">
+    <button onclick="uploadFile()">Upload</button>
+    <p id="uploadStatus"></p>
+
+    <h2>Step 2: Synthesize Annotations</h2>
+    <button onclick="generateSynthesis()">Generate Synthesis</button>
+
+    <div id="themeView"></div>
+
+    <h2>Step 3: Set Grouping Criteria</h2>
+
+    <h3>Section 1: Discussion Group Criteria</h3>
+    <label for="groupSize">Group Size:</label>
+    <select id="groupSize">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+    </select>
+
+    <label for="primaryTopic">Primary Topic/Concepts:</label>
+    <input type="text" id="primaryTopic" placeholder="e.g., 'I want my students to discuss...'">
+
+    <label>
+        <input type="checkbox" id="addressMisconceptions"> Address Misconceptions
+    </label>
+
+    <p>Level of Abstraction:</p>
+    <label><input type="radio" name="abstraction" value="Specific Examples"> Specific Examples</label>
+    <label><input type="radio" name="abstraction" value="Abstract Principles"> Abstract Principles</label>
+
+    <h3>Section 2: Discussion Goals (Select up to 3)</h3>
+    <label><input type="checkbox" name="discussionGoals" value="Deepen Text Interpretation"> Deepen Text Interpretation</label>
+    <label><input type="checkbox" name="discussionGoals" value="Encourage Elaboration & Connections"> Encourage Elaboration & Connections</label>
+    <label><input type="checkbox" name="discussionGoals" value="Stimulate Questioning & Uncertainty Identification"> Stimulate Questioning & Uncertainty Identification</label>
+    <label><input type="checkbox" name="discussionGoals" value="Promote Conceptual Clarification"> Promote Conceptual Clarification</label>
+    <label><input type="checkbox" name="discussionGoals" value="Foster Consensus Building"> Foster Consensus Building</label>
+    <label><input type="checkbox" name="discussionGoals" value="Provide Peer Support"> Provide Peer Support</label>
+    <label><input type="checkbox" name="discussionGoals" value="Explore & Address Conflicting Perspectives"> Explore & Address Conflicting Perspectives</label>
+
+    <h3>Section 3: Mode of Interaction (Select at least one)</h3>
+    <label><input type="checkbox" name="interactionMode" value="Debate"> Debate: Argue conflicting understandings</label>
+    <label><input type="checkbox" name="interactionMode" value="Informing"> Informing: One student explains to others</label>
+    <label><input type="checkbox" name="interactionMode" value="Co-construction"> Co-construction: Build shared understanding</label>
+    <label><input type="checkbox" name="interactionMode" value="Building Understanding Towards an Answer"> Building Understanding Towards an Answer</label>
+
+    <h2>Step 4: Generate Groups & Reflection Questions</h2>
+    <button onclick="generateGroupsAndQuestions()">Generate Groups & Questions</button>
+
+    <h3>Group Assignments</h3>
+    <table border="1">
+        <tr><th>Group</th><th>Members</th></tr>
+        <tbody id="groupAssignments"></tbody>
+    </table>
+
+    <h3>Rise-Above Questions</h3>
+    <table border="1">
+        <tr><th>Student</th><th>Reflection Question</th></tr>
+        <tbody id="reflectionQuestions"></tbody>
+    </table>
+
     <script>
-        function generateGroups() {
+        function uploadFile() {
+            let file = $("#fileInput").prop("files")[0];
+            let formData = new FormData();
+            formData.append("file", file);
+
             $.ajax({
-                url: '/generate_groups',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    discussion_goal: $('#discussion-goal').val(),
-                    group_size: parseInt($('#group-size').val())
-                }),
-                success: function(response) {
-                    let output = '';
-                    response.forEach((group, i) => {
-                        output += `<h3>Group ${i + 1}</h3>`;
-                        output += `<ul>`;
-                        group.forEach(student => {
-                            output += `<li>${student.name}</li>`;
-                        });
-                        output += `</ul>`;
-                    });
-                    $('#group-output').html(output);
+                url: "/upload",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    $("#uploadStatus").text("File uploaded successfully!");
+                },
+                error: function () {
+                    $("#uploadStatus").text("Error uploading file.");
                 }
             });
         }
 
-        function fetchThemes() {
-            $.ajax({
-                url: '/get_themes',
-                type: 'GET',
-                success: function(response) {
-                    let tableContent = '';
-                    for (let theme in response) {
-                        tableContent += `<tr>
-                            <td>${theme}</td>
-                            <td>${response[theme].join(', ')}</td>
-                            <td><button onclick="editTheme('${theme}')">Edit</button></td>
-                        </tr>`;
+        function generateSynthesis() {
+            $.post("/synthesize")
+                .done(function (data) {
+                    const themeView = $("#themeView");
+                    themeView.empty();
+
+                    if (data.synthesis_output) {
+                        // Create a table to display the JSON data
+                        let table = $('<table class="synthesis-table"></table>');
+                        let headerRow = $('<tr></tr>');
+
+                        // Assuming synthesis_output is a JSON object or array.  Adjust as needed for your specific data structure.
+                        if (Array.isArray(data.synthesis_output)) {
+                            if(data.synthesis_output.length > 0){
+                                // Add fixed headers
+                                headerRow.append('<th>Theme</th><th>Students</th><th>Snippets</th>');
+                                table.append(headerRow);
+
+                                data.synthesis_output.forEach(item => {
+                                    let row = $('<tr></tr>');
+                                    row.append(`<td>${item.theme}</td>`);
+                                    row.append(`<td>${item.students}</td>`);
+                                    row.append(`<td>${Array.isArray(item.snippets) ? item.snippets.join('<br>') : item.snippets}</td>`);
+                                    table.append(row);
+                                });
+                            } else {
+                                table.append('<tr><td colspan="3">No data found.</td></tr>');
+                            }
+                        } else if (typeof data.synthesis_output === 'object') {
+                            let keys = Object.keys(data.synthesis_output);
+                            keys.forEach(key => headerRow.append(`<th>${key}</th>`));
+                            table.append(headerRow);
+                            let row = $('<tr></tr>');
+                            keys.forEach(key => row.append(`<td>${data.synthesis_output[key]}</td>`));
+                            table.append(row);
+                        } else {
+                            table.append('<tr><td colspan="100%">Invalid data format.</td></tr>');
+                        }
+                        themeView.append(table);
+                    } else {
+                        themeView.append("<p>No data available</p>");
                     }
-                    $('#theme-table').html(tableContent);
-                }
-            });
+                })
+                .fail(function(xhr, status, error) {
+                    console.error("Synthesis error:", error);
+                    $("#themeView").text("Error generating synthesis");
+                });
         }
 
-        function submitThemes() {
-            // Get current theme data from table
-            let themes = {};
-            $('#theme-table tr').each(function() {
-                let theme = $(this).find('td:first').text();
-                let students = $(this).find('td:nth-child(2)').text().split(', ');
-                themes[theme] = students;
+
+        function generateGroupsAndQuestions() {
+            let groupSize = $("#groupSize").val();
+            let primaryTopic = $("#primaryTopic").val();
+            let addressMisconceptions = $("#addressMisconceptions").prop("checked");
+            let abstraction = $("input[name='abstraction']:checked").val();
+
+            let discussionGoals = [];
+            $("input[name='discussionGoals']:checked").each(function () {
+                discussionGoals.push($(this).val());
+            });
+
+            let interactionModes = [];
+            $("input[name='interactionMode']:checked").each(function () {
+                interactionModes.push($(this).val());
             });
 
             $.ajax({
-                url: '/assign_final_prompts',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({refined_themes: themes}),
-                success: function(response) {
-                    alert('Final prompts assigned successfully!');
+                url: "/group_and_questions",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    group_size: groupSize,
+                    primary_topic: primaryTopic,
+                    address_misconceptions: addressMisconceptions,
+                    level_of_abstraction: abstraction,
+                    discussion_goals: discussionGoals,
+                    interaction_modes: interactionModes
+                }),
+                success: function(data) {
+                    console.log(data);  // Check the structure of the response
+
+                    // Check if data.grouping_output and data.questions_output are valid arrays
+                    if (Array.isArray(data.grouping_output) && Array.isArray(data.questions_output)) {
+                        // Populate groups
+                        $("#groupAssignments").empty();
+                        data.grouping_output.forEach((group) => {
+                            const members = group.members.map(m => `${m.name} (${m.perspective})`).join(", ");
+                            $("#groupAssignments").append(`<tr><td>${group.group_name}</td><td>${members}</td></tr>`);
+                        });
+
+                        // Populate reflection questions
+                        $("#reflectionQuestions").empty();
+                        data.questions_output.forEach(question => {
+                            $("#reflectionQuestions").append(`<tr><td>${question.student}</td><td>${question.question}</td></tr>`);
+                        });
+                    } else {
+                        console.error("Invalid data format: ", data);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error in request: ", status, error);
                 }
             });
         }
     </script>
-</head>
-<body>
-    <h1>AI Discussion Grouping</h1>
 
-    <label>Discussion Goal:</label>
-    <select id="discussion-goal">
-        <option value="diverse_views">Diverse Views</option>
-        <option value="deepen_shared_ideas">Deepen Shared Ideas</option>
-    </select>
-
-    <label>Group Size:</label>
-    <input type="number" id="group-size" value="3">
-
-    <button onclick="generateGroups()">Generate Groups</button>
-    
-    <h2>Generated Groups</h2>
-    <div id="group-output"></div>
-
-    <h2>Synthesized Themes</h2>
-    <button onclick="fetchThemes()">Get Themes</button>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Theme</th>
-                <th>Students</th>
-                <th>Edit</th>
-            </tr>
-        </thead>
-        <tbody id="theme-table"></tbody>
-    </table>
-
-    <button onclick="submitThemes()">Finalize Themes</button>
-
-    <h2>Final Prompts</h2>
-    <div id="final-prompts"></div>
-
-    </body>
+</body>
 </html>

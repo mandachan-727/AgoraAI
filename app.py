@@ -1,119 +1,155 @@
 from flask import Flask, request, jsonify, render_template
-import json
-import random
 import openai
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import KMeans
-from collections import defaultdict
+import json
+import logging
 
 app = Flask(__name__)
 
-# Load mock student data
-with open('mock_data.json', 'r') as f:
-    students = json.load(f)
+openai.api_key = "insert_your_openai_api_key_here"  # Replace with your OpenAI API key
 
-# OpenAI API Key
-OPENAI_API_KEY = "key"
-openai.api_key = OPENAI_API_KEY
+logging.basicConfig(level=logging.DEBUG)
 
-### NLP-BASED GROUPING LOGIC ###
-
-# Extract key themes from student annotations
-def extract_themes(annotations):
-    prompt = f"Analyze the following annotations and extract the key academic themes:\n{annotations}"
-
-    response = openai.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    return response.choices[0].message.content.split(", ")
-
-# Cluster students by annotation themes
-def cluster_students(discussion_goal, group_size):
-    all_annotations = [" ".join(student["annotations"]) for student in students]
-
-    vectorizer = TfidfVectorizer(stop_words="english")
-    X = vectorizer.fit_transform(all_annotations)
-
-    num_clusters = max(2, len(students) // group_size)  # Adjust cluster count dynamically
-    kmeans = KMeans(n_clusters=num_clusters, random_state=42, n_init=10)
-    labels = kmeans.fit_predict(X)
-
-    # First, gather students into initial clusters
-    clustered_students = defaultdict(list)
-    for i, student in enumerate(students):
-        clustered_students[labels[i]].append(student)
-    
-    # Then redistribute to achieve desired group size
-    groups = []
-    current_group = []
-    for cluster in clustered_students.values():
-        for student in cluster:
-            current_group.append(student)
-            if len(current_group) == group_size:
-                groups.append(current_group)
-                current_group = []
-    
-    # Add any remaining students to last group
-    if current_group:
-        if len(current_group) < group_size and groups:
-            groups[-1].extend(current_group)  # add to last group if smaller than desired size
-        else:
-            groups.append(current_group)  # or create new group if reasonable size
-    if discussion_goal == "diverse_views":
-        random.shuffle(groups)
-    return groups
-
-### SYNTHESIZE THEMES FOR INSTRUCTOR ###
-
-def synthesize_themes():
-    theme_summary = {}
-    for student in students:
-        themes = extract_themes(" ".join(student["annotations"]))
-        for theme in themes:
-            if theme not in theme_summary:
-                theme_summary[theme] = []
-            theme_summary[theme].append(student["name"])
-
-    return theme_summary  # Returns {theme: [students discussing it]}
-
-@app.route('/get_themes', methods=['GET'])
-def get_themes():
-    themes = synthesize_themes()
-    return jsonify(themes)
-
-### FINAL PROMPT GENERATION ###
-
-def generate_final_prompts(refined_themes):
-    prompts = {}
-    for theme, student_list in refined_themes.items():
-        prompt_text = f"Discuss the theme '{theme}' in relation to previous annotations. Consider new perspectives."
-        for student in student_list:
-            prompts[student] = prompt_text
-    return prompts
-
-@app.route('/assign_final_prompts', methods=['POST'])
-def assign_final_prompts():
-    data = request.json
-    refined_themes = data['refined_themes']
-    final_prompts = generate_final_prompts(refined_themes)
-    return jsonify(final_prompts)
-
-### MAIN ROUTES ###
+# Store uploaded data
+annotations_data = {}
+synthesized_data = {}  # Store the synthesized themes and students
 
 @app.route('/')
-def home():
+def index():
     return render_template('index.html')
 
-@app.route('/generate_groups', methods=['POST'])
-def generate_groups():
-    if request.is_json:
-        data = request.json
-    else:
-        data = request.form
-    groups = cluster_students(data['discussion_goal'], data['group_size'])
-    return jsonify(groups)
+# Step 1: File Upload
+@app.route('/upload', methods=['POST'])
+def upload():
+    file = request.files['file']
+    if file:
+        annotations_data['file_content'] = file.read().decode("utf-8")
+        return jsonify({"success": True, "message": "File uploaded successfully!"})
+    return jsonify({"success": False, "message": "File upload failed!"})
+
+# Step 2: Synthesize Annotations
+@app.route('/synthesize', methods=['POST'])
+def synthesize():
+    # Call GPT to analyze and synthesize key themes
+    prompt = f"""
+    Extract the key themes from the following student annotations. 
+    - The key themes should be phrases.
+    - Identify recurring themes and major discussion points.
+    The output should be in a table with 3 columns:
+      1. **Theme**: The theme or main point identified.
+      2. **Students**: List of students who mentioned this theme.
+      3. **Snippets**: Key snippets of the relevant comments from students related to the theme.
+    """
+
+    response = openai.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "system", "content": prompt}, {"role": "user", "content": annotations_data.get('file_content', '')}]
+    )
+
+    # Print the raw response to the console for debugging
+    print("GPT Response:", response)
+
+    # Convert the table string into a structured format
+    synthesis_output = response.choices[0].message.content
+    
+    # Split the table into rows and remove the markdown table formatting
+    rows = [row.strip() for row in synthesis_output.split('\n') if row.strip() and '|-' not in row]
+    headers = [h.strip() for h in rows[0].split('|') if h.strip()]
+    
+    # Convert to array of objects
+    result = []
+    for row in rows[2:]:  # Skip header and separator
+        cols = [col.strip() for col in row.split('|') if col.strip()]
+        if len(cols) >= 3:
+            result.append({
+                "theme": cols[0],
+                "students": cols[1],
+                "snippets": cols[2]
+            })
+
+    return jsonify({
+        "synthesis_output": result
+    })
+
+
+
+# Step 3: Final Grouping and Reflection Questions (based on criteria and Step 2 synthesis)
+@app.route('/group_and_questions', methods=['POST'])
+def group_and_questions():
+    data = request.json
+    group_size = data.get("group_size")
+    primary_topic = data.get("primary_topic")
+    abstraction = data.get("abstraction")
+    discussion_goals = data.get("discussion_goals")
+    interaction_modes = data.get("interaction_modes")
+
+    # Retrieve the synthesized themes and students
+    themes_and_students = synthesized_data.get('themes_and_students', {})
+
+    # GPT prompt for grouping (Step 3a)
+    grouping_prompt = f"""
+    Group students into discussions based on the following criteria:
+    - Group Size: {group_size}
+    - Primary Topic: {primary_topic}
+    - Level of Abstraction: {abstraction}
+    - The themes and the students who mentioned them are as follows:
+    {json.dumps(themes_and_students, indent=2)}
+
+    Ensure that:
+    - Groups are evenly distributed.
+    - Each group has diverse perspectives based on the themes mentioned.
+    - Group discussions remain focused on the specified topics.
+    """
+
+    group_response = openai.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You must respond with valid JSON"},
+            {"role": "user", "content": grouping_prompt + "\nFormat the response as a JSON array of objects with 'group_name' and 'members' fields."}
+        ]
+    )
+
+    # GPT prompt for reflection questions (Step 3b)
+    question_prompt = f"""
+    Generate personalized reflection questions based on the groups and criteria:
+    - Goals: {discussion_goals}
+    - Interaction Modes: {interaction_modes}
+    - The generated groups are as follows: {json.dumps(group_response.choices[0].message.content, indent=2)}
+    Ensure the questions:
+    - Encourage deeper thinking.
+    - Align with each student's group discussion focus.
+    - Fit within the interaction mode chosen.
+    Format the response as a JSON array of objects with 'student' and 'question' fields.
+    """
+
+    question_response = openai.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You must respond with valid JSON"},
+            {"role": "user", "content": question_prompt}
+        ]
+    )
+
+    try:
+        # Attempt to parse JSON responses from GPT
+        grouping_output = json.loads(group_response.choices[0].message.content)
+        questions_output = json.loads(question_response.choices[0].message.content)
+
+        # Log the received outputs for debugging
+        logging.debug(f"Generated groups: {grouping_output}")
+        logging.debug(f"Generated reflection questions: {questions_output}")
+
+    except json.JSONDecodeError as e:
+        # Log an error if JSON parsing fails
+        logging.error(f"Error decoding JSON response: {e}")
+        # Fallback to empty arrays if JSON parsing fails
+        grouping_output = []
+        questions_output = []
+
+    # Return the results for Step 3 (grouping and questions)
+    return jsonify({
+        "grouping_output": grouping_output,
+        "questions_output": questions_output
+    })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
