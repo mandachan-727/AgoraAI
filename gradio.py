@@ -64,13 +64,14 @@ def synthesize_annotations():
 def group_and_generate_questions(group_size, primary_topic, abstraction, discussion_goals, interaction_modes):
     """Groups students and generates reflection questions based on criteria."""
     if 'themes_and_students' not in synthesized_data:
-        return "Please run synthesis first.", None
+        return "Please run synthesis first.", "Please run synthesis first."
 
     themes_and_students = synthesized_data['themes_and_students']
-    
+
+    # Grouping prompt
     grouping_prompt = f"""
-    Group students into distinct groups for discussion based on the following criteria:
-    - Group size: How many students in a group: {group_size}
+    Group students into discussions based on the following criteria:
+    - Group Size: {group_size}
     - Primary Topic: {primary_topic}
     - Level of Abstraction: {abstraction}
     - Interaction Modes: {interaction_modes}
@@ -79,96 +80,116 @@ def group_and_generate_questions(group_size, primary_topic, abstraction, discuss
 
     Ensure that:
     - Groups are evenly distributed.
+    - Each group has {group_size} students (or as close as possible).
     - Each group has diverse perspectives based on the themes mentioned.
-    - Group discussions remain focused on the specified topics.
 
-    The output should be a table with two fields: Group and Students. In each row of the students column, list each student's name and the theme they should discuss in brackets.
+    Respond with valid JSON in the following format:
+    [
+        {{
+            "group_name": "Group 1",
+            "members": [
+                {{"name": "Student1", "perspective": "Theme1"}},
+                {{"name": "Student2", "perspective": "Theme2"}}
+            ]
+        }},
+        {{
+            "group_name": "Group 2",
+            "members": [
+                {{"name": "Student3", "perspective": "Theme3"}},
+                {{"name": "Student4", "perspective": "Theme4"}}
+            ]
+        }}
+    ]
     """
 
     try:
         group_response = openai.chat.completions.create(
             model="gpt-4",
-            messages=[{"role": "system", "content": "Provide a plain text response."},
-                      {"role": "user", "content": grouping_prompt}]
+            messages=[
+                {"role": "system", "content": "You must respond with valid JSON."},
+                {"role": "user", "content": grouping_prompt}
+            ]
         )
         group_output = group_response.choices[0].message.content.strip()
-
-        # Parse the GPT output into a structured format (e.g., a list of dictionaries)
-        rows = [line.split('|') for line in group_output.split('\n') if '|' in line]
-        table_data = [{"Group": row[0].strip(), "Students": row[1].strip()} for row in rows]
-
     except Exception as e:
         logging.error(f"Error in grouping response: {e}")
-        table_data = [{"Group": "Error", "Students": "Error generating groups"}]
+        group_output = "Error generating groups."
 
+    # Question generation prompt
     question_prompt = f"""
     Generate personalized reflection questions for each student based on the groups and criteria:
     - Goals: {discussion_goals}
     - Interaction Modes: {interaction_modes}
-    Ensure the questions:
-    - Encourage deeper thinking.
-    - Align with each student's group discussion focus.
-    - Fit within the interaction mode chosen.
-    Format the response as plain text with each question on a new line.
+    - The generated groups are as follows: {group_output}
+
+    Respond with valid JSON in the following format:
+    [
+        {{"student": "Student1", "question": "Reflection question for Student1"}},
+        {{"student": "Student2", "question": "Reflection question for Student2"}}
+    ]
     """
 
     try:
         question_response = openai.chat.completions.create(
             model="gpt-4",
-            messages=[{"role": "system", "content": "Provide a plain text response."},
-                      {"role": "user", "content": question_prompt}]
+            messages=[
+                {"role": "system", "content": "You must respond with valid JSON."},
+                {"role": "user", "content": question_prompt}
+            ]
         )
         question_output = question_response.choices[0].message.content.strip()
     except Exception as e:
         logging.error(f"Error in question response: {e}")
         question_output = "Error generating questions."
 
-    return table_data, question_output
+    return group_output, question_output
 
 # Gradio UI
 upload_interface = gr.Interface(
     fn=upload_file,
     inputs=gr.File(),
     outputs="text",
-    fn=synthesize_annotations,tations"
-    inputs=None,
-    outputs=gr.Dataframe(label="Synthesized Data Table"),
-    title="Synthesize Annotations"
-)ynthesis_interface = gr.Interface(
+    title="Upload Annotations File"
+)
+
+synthesis_interface = gr.Interface(
     fn=synthesize_annotations,
+    inputs=None,
+    outputs=gr.Dataframe(headers=["Theme", "Mentioned by", "Snippets"], label="Synthesized Data Table"),
+    title="Synthesize Annotations"
+)
+
 grouping_interface = gr.Interface(
-    fn=group_and_generate_questions,hesized Data Table"),
-    inputs=[ynthesize Annotations"
+    fn=group_and_generate_questions,
+    inputs=[
         gr.Number(label="Group Size"),
         gr.Textbox(label="Primary Topic"),
         gr.Radio(["Specific Examples", "Abstract Principles"], label="Level of Abstraction"),
-        gr.CheckboxGroup([questions,
+        gr.CheckboxGroup([
             "Deepen Text Interpretation",
             "Encourage Elaboration & Connections",
             "Stimulate Questioning & Uncertainty Identification",
-            "Promote Conceptual Clarification",t Principles"], label="Level of Abstraction"),
+            "Promote Conceptual Clarification",
             "Foster Consensus Building",
-            "Provide Peer Support",tion",
+            "Provide Peer Support",
             "Explore & Address Conflicting Perspectives"
-        ], label="Discussion Goals"),Uncertainty Identification",
-        gr.CheckboxGroup([ptual Clarification",
+        ], label="Discussion Goals"),
+        gr.CheckboxGroup([
             "Debate: Argue conflicting understandings",
             "Informing: One student explains to others",
             "Co-construction: Collaboratively build a shared understanding",
             "Building Understanding Towards an Answer: Develop foundational concepts"
         ], label="Interaction Mode")
-    ],      "Debate: Argue conflicting understandings",
-    outputs=[Informing: One student explains to others",
-        gr.Dataframe(headers=["Group", "Students"], label="Student Grouping Table"),
-        gr.Textbox(label="Reflection Questions Output", lines=10, placeholder="GPT output for questions will appear here.")
-    ],  ], label="Interaction Mode")
-    title="Generate Groups & Reflection Questions"
-)   outputs=[
-        gr.Textbox(label="Student Grouping Output", lines=10, placeholder="GPT output for groupings will appear here."),
-# Launch Gradio Applabel="Reflection Questions Output", lines=10, placeholder="GPT output for questions will appear here.")
-gr.TabbedInterface([upload_interface, synthesis_interface, grouping_interface], ["Upload", "Synthesize", "Group & Questions"]).launch()
+    ],
+    outputs=[
+        gr.Textbox(label="Group Assignments (Raw GPT Output)", lines=10, placeholder="GPT output for group assignments will appear here."),
+        gr.Textbox(label="Reflection Questions (Raw GPT Output)", lines=10, placeholder="GPT output for questions will appear here.")
+    ],
     title="Generate Groups & Reflection Questions"
 )
 
 # Launch Gradio App
-gr.TabbedInterface([upload_interface, synthesis_interface, grouping_interface], ["Upload", "Synthesize", "Group & Questions"]).launch()
+gr.TabbedInterface(
+    [upload_interface, synthesis_interface, grouping_interface],
+    ["Upload", "Synthesize", "Group & Questions"]
+).launch()
