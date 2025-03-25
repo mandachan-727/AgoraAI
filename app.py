@@ -5,7 +5,7 @@ import logging
 
 app = Flask(__name__)
 
-openai.api_key = "insert_your_openai_api_key_here"  # Replace with your OpenAI API key
+openai.api_key = "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"
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -29,6 +29,7 @@ def upload():
 # Step 2: Synthesize Annotations
 @app.route('/synthesize', methods=['POST'])
 def synthesize():
+    global synthesized_data
     # Call GPT to analyze and synthesize key themes
     prompt = f"""
     Extract the key themes from the following student annotations. 
@@ -45,16 +46,13 @@ def synthesize():
         messages=[{"role": "system", "content": prompt}, {"role": "user", "content": annotations_data.get('file_content', '')}]
     )
 
-    # Print the raw response to the console for debugging
-    print("GPT Response:", response)
-
     # Convert the table string into a structured format
     synthesis_output = response.choices[0].message.content
-    
+
     # Split the table into rows and remove the markdown table formatting
     rows = [row.strip() for row in synthesis_output.split('\n') if row.strip() and '|-' not in row]
     headers = [h.strip() for h in rows[0].split('|') if h.strip()]
-    
+
     # Convert to array of objects
     result = []
     for row in rows[2:]:  # Skip header and separator
@@ -65,6 +63,9 @@ def synthesize():
                 "students": cols[1],
                 "snippets": cols[2]
             })
+    
+    # Store the synthesized data for use in grouping
+    synthesized_data['themes_and_students'] = result
 
     return jsonify({
         "synthesis_output": result
@@ -103,17 +104,22 @@ def group_and_questions():
     group_response = openai.chat.completions.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "You must respond with valid JSON"},
-            {"role": "user", "content": grouping_prompt + "\nFormat the response as a JSON array of objects with 'group_name' and 'members' fields."}
+            {"role": "system", "content": "You must respond with valid JSON with the following structure: [{\"group_name\": \"Group 1\", \"members\": [{\"name\": \"Student1\", \"perspective\": \"Theme1\"}]}]"},
+            {"role": "user", "content": grouping_prompt}
         ]
     )
+
+    try:
+        groups = json.loads(group_response.choices[0].message.content)
+    except json.JSONDecodeError:
+        groups = []
 
     # GPT prompt for reflection questions (Step 3b)
     question_prompt = f"""
     Generate personalized reflection questions based on the groups and criteria:
     - Goals: {discussion_goals}
     - Interaction Modes: {interaction_modes}
-    - The generated groups are as follows: {json.dumps(group_response.choices[0].message.content, indent=2)}
+    - The generated groups are as follows: {json.dumps(groups)}
     Ensure the questions:
     - Encourage deeper thinking.
     - Align with each student's group discussion focus.
