@@ -68,7 +68,7 @@ def group_and_generate_questions(group_size, primary_topic, abstraction, discuss
 
     themes_and_students = synthesized_data['themes_and_students']
 
-    # Grouping prompt
+    # Updated grouping prompt
     grouping_prompt = f"""
     Group students into discussions based on the following criteria:
     - Group Size: {group_size}
@@ -79,65 +79,57 @@ def group_and_generate_questions(group_size, primary_topic, abstraction, discuss
     {json.dumps(themes_and_students, indent=2)}
 
     Ensure that:
+    - Each unique student is assigned to only one group.
     - Groups are evenly distributed.
     - Each group has {group_size} students (or as close as possible).
     - Each group has diverse perspectives based on the themes mentioned.
 
-    Respond with valid JSON in the following format:
-    [
-        {{
-            "group_name": "Group 1",
-            "members": [
-                {{"name": "Student1", "perspective": "Theme1"}},
-                {{"name": "Student2", "perspective": "Theme2"}}
-            ]
-        }},
-        {{
-            "group_name": "Group 2",
-            "members": [
-                {{"name": "Student3", "perspective": "Theme3"}},
-                {{"name": "Student4", "perspective": "Theme4"}}
-            ]
-        }}
-    ]
+    Respond with a bulleted list in the following format:
+    - Group 1:
+      - Student1 (Theme1)
+      - Student2 (Theme2)
+    - Group 2:
+      - Student3 (Theme3)
+      - Student4 (Theme4)
     """
 
     try:
         group_response = openai.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You must respond with valid JSON."},
+                {"role": "system", "content": "You must respond with a bulleted list."},
                 {"role": "user", "content": grouping_prompt}
             ]
         )
         group_output = group_response.choices[0].message.content.strip()
+        logging.debug(f"Raw Grouping Output: {group_output}")  # Log the raw GPT response
     except Exception as e:
         logging.error(f"Error in grouping response: {e}")
         group_output = "Error generating groups."
 
-    # Question generation prompt
+    # Updated question generation prompt
     question_prompt = f"""
     Generate personalized reflection questions for each student based on the groups and criteria:
     - Goals: {discussion_goals}
     - Interaction Modes: {interaction_modes}
-    - The generated groups are as follows: {group_output}
+    - The generated groups are as follows:
+    {group_output}
 
-    Respond with valid JSON in the following format:
-    [
-        {{"student": "Student1", "question": "Reflection question for Student1"}},
-        {{"student": "Student2", "question": "Reflection question for Student2"}}
-    ]
+    Respond with a bulleted list in the following format:
+    - Student1: Reflection question for Student1
+    - Student2: Reflection question for Student2
     """
 
     try:
         question_response = openai.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You must respond with valid JSON."},
+                {"role": "system", "content": "You must respond with a bulleted list."},
                 {"role": "user", "content": question_prompt}
             ]
         )
         question_output = question_response.choices[0].message.content.strip()
+        logging.debug(f"Raw Question Output: {question_output}")  # Log the raw GPT response
     except Exception as e:
         logging.error(f"Error in question response: {e}")
         question_output = "Error generating questions."
@@ -151,14 +143,12 @@ upload_interface = gr.Interface(
     outputs="text",
     title="Upload Annotations File"
 )
-
 synthesis_interface = gr.Interface(
     fn=synthesize_annotations,
     inputs=None,
     outputs=gr.Dataframe(headers=["Theme", "Mentioned by", "Snippets"], label="Synthesized Data Table"),
     title="Synthesize Annotations"
 )
-
 grouping_interface = gr.Interface(
     fn=group_and_generate_questions,
     inputs=[
@@ -182,12 +172,11 @@ grouping_interface = gr.Interface(
         ], label="Interaction Mode")
     ],
     outputs=[
-        gr.Textbox(label="Group Assignments (Raw GPT Output)", lines=10, placeholder="GPT output for group assignments will appear here."),
-        gr.Textbox(label="Reflection Questions (Raw GPT Output)", lines=10, placeholder="GPT output for questions will appear here.")
+        gr.Textbox(label="Group Assignments (Bulleted List)", lines=10, placeholder="GPT output for group assignments will appear here."),
+        gr.Textbox(label="Reflection Questions (Bulleted List)", lines=10, placeholder="GPT output for questions will appear here.")
     ],
     title="Generate Groups & Reflection Questions"
 )
-
 # Launch Gradio App
 gr.TabbedInterface(
     [upload_interface, synthesis_interface, grouping_interface],
