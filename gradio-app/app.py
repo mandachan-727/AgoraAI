@@ -65,7 +65,7 @@ def synthesize_annotations():
         return "Error processing GPT response."
 
 def group_and_generate_questions(group_size, primary_topic, abstraction, discussion_goals, interaction_modes):
-    """Groups students and generates reflection questions based on criteria."""
+    """Groups students and generates rise-above questions based on criteria."""
     if 'file_content' not in annotations_data:
         return "Please upload a file first.", "Please upload a file first."
 
@@ -133,7 +133,7 @@ def group_and_generate_questions(group_size, primary_topic, abstraction, discuss
 
     # Question generation prompt
     question_prompt = f"""
-    Generate personalized reflection questions for each student based on these criteria:
+    Generate personalized rise-above questions for each student based on these criteria:
     - Unique Students: {', '.join(unique_students)}
     - Primary Topics to shape the question: {primary_topic}
     - Goals - these goals are not the content of discussion but rather how the question should be desgined based on the topic and content of annotations: {discussion_goals}
@@ -144,8 +144,8 @@ def group_and_generate_questions(group_size, primary_topic, abstraction, discuss
     - Each unique student is assigned only one question.
     - Prompts are sometimes generated to put students from the same group in conversation with each other, e.g., Student 1 can be prompted to refer to/respond to Student 2's ideas (where relevant)
     Respond with a bulleted list in the following format:
-    - Student1: Reflection question for Student1
-    - Student2: Reflection question for Student2
+    - Student1: rise-above question for Student1
+    - Student2: rise-above question for Student2
     """
 
     try:
