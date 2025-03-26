@@ -133,11 +133,15 @@ def group_and_generate_questions(group_size, primary_topic, abstraction, discuss
 
     # Question generation prompt
     question_prompt = f"""
-    Generate personalized reflection questions for each student based on the groups and criteria:
-    - Goals: {discussion_goals}
+    Generate personalized reflection questions for each student based on these criteria:
+    - Unique Students: {', '.join(unique_students)}
+    - Primary Topics to shape the question: {primary_topic}
+    - Goals - these goals are not the content of discussion but rather how the question should be desgined based on the topic and content of annotations: {discussion_goals}
     - Interaction Modes: {interaction_modes}
-    - The generated groups are as follows:
+    - The groups generated prior are as follows:
     {group_output}
+    Ensure that:
+    - Each unique student is assigned only one question.
     Respond with a bulleted list in the following format:
     - Student1: Reflection question for Student1
     - Student2: Reflection question for Student2
@@ -161,13 +165,13 @@ def group_and_generate_questions(group_size, primary_topic, abstraction, discuss
 
 # Mapping for Discussion Goals
 DISCUSSION_GOALS_DESCRIPTIONS = {
-    "Deepen Text Interpretation": "The facilitator clusters students based on diverse interpretations and assigns them prompts that challenge their perspectives, encouraging textual analysis, inferencing, and synthesis to refine collective understanding.",
-    "Encourage Elaboration & Connections": "Groups are formed with students who hold related yet distinct ideas, prompting them to expand on each other’s points, link concepts to real-world contexts, and articulate deeper connections across themes.",
-    "Stimulate Questioning & Uncertainty Identification": "Students are grouped to include differing levels of confidence in the topic. They are prompted to challenge assumptions, identify ambiguities, and collaboratively refine their understanding by generating and addressing critical questions.",
-    "Promote Conceptual Clarification": "The facilitator organizes students with varying levels of clarity on key concepts, assigning them prompts that require defining, contrasting, and refining ideas to establish shared, well-articulated conceptual understandings.",
-    "Foster Consensus Building": "Students with differing viewpoints are placed together and guided to navigate disagreements, evaluate evidence, and reach reasoned agreements, ensuring balanced discussions that integrate multiple perspectives into a coherent synthesis.",
-    "Provide Peer Support": "Groups combine students with stronger and weaker grasp of topics, allowing for reciprocal teaching where explanations, clarifications, and scaffolding strengthen collective learning while fostering a supportive discussion environment.",
-    "Explore & Address Conflicting Perspectives": "The facilitator forms groups with opposing viewpoints and prompts them to critically engage, recognize underlying assumptions, and constructively negotiate differences while maintaining open, respectful discourse."
+    "Deepen Text Interpretation": "Cluster students based on diverse interpretations. Within each group, assigns students prompts that challenge their perspectives, encouraging textual analysis, inferencing, and synthesis to refine collective understanding.",
+    "Encourage Elaboration & Connections": "Form groups of students who hold related yet distinct ideas. Within each group, prompt students to expand on each other’s points, link concepts to real-world contexts, and articulate deeper connections across themes.",
+    "Stimulate Questioning & Uncertainty Identification": "Group students to include differing levels of confidence in the topic. Within each group,. prompt each student to challenge assumptions, identify ambiguities, and collaboratively refine their understanding by generating and addressing critical questions.",
+    "Promote Conceptual Clarification": "Group students with varying levels of clarity on key concepts. Within each group, assign prompts that require defining, contrasting, and refining ideas to establish shared, well-articulated conceptual understandings.",
+    "Foster Consensus Building": "Place together tudents with differing viewpoints. Within each group, give each student prompts to guide them to navigate disagreements, evaluate evidence, and reach reasoned agreements, ensuring balanced discussions that integrate multiple perspectives into a coherent synthesis.",
+    "Provide Peer Support": "Combine students with stronger and weaker grasp of topics. Within each group, generate prompts that foster reciprocal teaching where explanations, clarifications, and scaffolding strengthen collective learning while fostering a supportive discussion environment.",
+    "Explore & Address Conflicting Perspectives": "Form groups with opposing viewpoints. Within each group, prompt students to critically engage, recognize underlying assumptions, and constructively negotiate differences while maintaining open, respectful discourse."
 }
 
 # Mapping for Modes of Interaction
@@ -215,7 +219,7 @@ grouping_interface = gr.Interface(
     ],
     outputs=[
         gr.Textbox(label="Group Assignments (Bulleted List)", lines=10, placeholder="GPT output for group assignments will appear here."),
-        gr.Textbox(label="Reflection Questions (Bulleted List)", lines=10, placeholder="GPT output for questions will appear here.")
+        gr.Textbox(label="Rise-above Questions (Bulleted List)", lines=10, placeholder="GPT output for questions will appear here.")
     ],
     title="Generate Groups & Rise-above Questions"
 )
