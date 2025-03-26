@@ -4,7 +4,6 @@ import json
 import logging
 import pandas as pd
 
-# yay
 # Set OpenAI API Key (Do not hardcode; use environment variables in production)
 openai.api_key = "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"
 
@@ -63,27 +62,48 @@ def synthesize_annotations():
 
 def group_and_generate_questions(group_size, primary_topic, abstraction, discussion_goals, interaction_modes):
     """Groups students and generates reflection questions based on criteria."""
-    if 'themes_and_students' not in synthesized_data:
-        return "Please run synthesis first.", "Please run synthesis first."
+    if 'file_content' not in annotations_data:
+        return "Please upload a file first.", "Please upload a file first."
 
-    themes_and_students = synthesized_data['themes_and_students']
+    # Extract unique student names from the "name" field in annotations_data
+    try:
+        file_content = json.loads(annotations_data['file_content'])  # Parse the uploaded JSON file
+        unique_students = [entry['name'] for entry in file_content if 'name' in entry]  # Extract names
+    except (json.JSONDecodeError, KeyError) as e:
+        logging.error(f"Error parsing uploaded file content: {e}")
+        return "Error parsing uploaded file content.", "Error parsing uploaded file content."
 
-    # Updated grouping prompt
+    # Ensure unique students are sorted for consistency
+    unique_students = sorted(set(unique_students))
+
+    # Build descriptions for selected discussion goals
+    selected_goals_descriptions = "\n".join(
+        [f"- {goal}: {DISCUSSION_GOALS_DESCRIPTIONS[goal]}" for goal in discussion_goals if goal in DISCUSSION_GOALS_DESCRIPTIONS]
+    )
+
+    # Build descriptions for selected interaction modes
+    selected_modes_descriptions = "\n".join(
+        [f"- {mode}: {INTERACTION_MODES_DESCRIPTIONS[mode]}" for mode in interaction_modes if mode in INTERACTION_MODES_DESCRIPTIONS]
+    )
+
+    # Grouping prompt
     grouping_prompt = f"""
-    Group students into discussions based on the following criteria:
+    Group the following unique students into discussions based on the criteria below:
+    - Unique Students: {', '.join(unique_students)}
     - Group Size: {group_size}
     - Primary Topic: {primary_topic}
     - Level of Abstraction: {abstraction}
-    - Interaction Modes: {interaction_modes}
-    - The themes and the students who mentioned them are as follows:
-    {json.dumps(themes_and_students, indent=2)}
-
+    Discussion Goals:
+    {selected_goals_descriptions}
+    Modes of Interaction:
+    {selected_modes_descriptions}
+    The themes and the students who mentioned them are as follows:
+    {json.dumps(synthesized_data.get('themes_and_students', []), indent=2)}
     Ensure that:
     - Each unique student is assigned to only one group.
     - Groups are evenly distributed.
     - Each group has {group_size} students (or as close as possible).
     - Each group has diverse perspectives based on the themes mentioned.
-
     Respond with a bulleted list in the following format:
     - Group 1:
       - Student1 (Theme1)
@@ -107,14 +127,13 @@ def group_and_generate_questions(group_size, primary_topic, abstraction, discuss
         logging.error(f"Error in grouping response: {e}")
         group_output = "Error generating groups."
 
-    # Updated question generation prompt
+    # Question generation prompt
     question_prompt = f"""
     Generate personalized reflection questions for each student based on the groups and criteria:
     - Goals: {discussion_goals}
     - Interaction Modes: {interaction_modes}
     - The generated groups are as follows:
     {group_output}
-
     Respond with a bulleted list in the following format:
     - Student1: Reflection question for Student1
     - Student2: Reflection question for Student2
@@ -136,6 +155,25 @@ def group_and_generate_questions(group_size, primary_topic, abstraction, discuss
 
     return group_output, question_output
 
+# Mapping for Discussion Goals
+DISCUSSION_GOALS_DESCRIPTIONS = {
+    "Deepen Text Interpretation": "The facilitator clusters students based on diverse interpretations and assigns them prompts that challenge their perspectives, encouraging textual analysis, inferencing, and synthesis to refine collective understanding.",
+    "Encourage Elaboration & Connections": "Groups are formed with students who hold related yet distinct ideas, prompting them to expand on each other’s points, link concepts to real-world contexts, and articulate deeper connections across themes.",
+    "Stimulate Questioning & Uncertainty Identification": "Students are grouped to include differing levels of confidence in the topic. They are prompted to challenge assumptions, identify ambiguities, and collaboratively refine their understanding by generating and addressing critical questions.",
+    "Promote Conceptual Clarification": "The facilitator organizes students with varying levels of clarity on key concepts, assigning them prompts that require defining, contrasting, and refining ideas to establish shared, well-articulated conceptual understandings.",
+    "Foster Consensus Building": "Students with differing viewpoints are placed together and guided to navigate disagreements, evaluate evidence, and reach reasoned agreements, ensuring balanced discussions that integrate multiple perspectives into a coherent synthesis.",
+    "Provide Peer Support": "Groups combine students with stronger and weaker grasp of topics, allowing for reciprocal teaching where explanations, clarifications, and scaffolding strengthen collective learning while fostering a supportive discussion environment.",
+    "Explore & Address Conflicting Perspectives": "The facilitator forms groups with opposing viewpoints and prompts them to critically engage, recognize underlying assumptions, and constructively negotiate differences while maintaining open, respectful discourse."
+}
+
+# Mapping for Modes of Interaction
+INTERACTION_MODES_DESCRIPTIONS = {
+    "Debate: Argue Conflicting Understandings": "Students with opposing perspectives are grouped and assigned roles that require defending, critiquing, and refining their arguments, fostering critical thinking, persuasive reasoning, and engagement with counterarguments.",
+    "Informing: One Student Explains to Others": "Groups include knowledge disparities where informed students act as peer educators, explaining concepts, providing examples, and clarifying misunderstandings, reinforcing learning through structured knowledge-sharing.",
+    "Co-construction: Collaboratively Build a Shared Understanding": "Students with complementary knowledge work together to integrate insights, refine collective interpretations, and construct nuanced understandings, ensuring active participation and mutual idea development.",
+    "Building Understanding Towards an Answer: Develop Foundational Concepts": "Groups engage in stepwise knowledge-building, collectively identifying gaps, structuring foundational ideas, and synthesizing key insights, leading to stronger conceptual frameworks and deeper comprehension."
+}
+
 # Gradio UI
 upload_interface = gr.Interface(
     fn=upload_file,
@@ -153,7 +191,7 @@ grouping_interface = gr.Interface(
     fn=group_and_generate_questions,
     inputs=[
         gr.Number(label="Group Size"),
-        gr.Textbox(label="Primary Topic"),
+        gr.Textbox(label="Primary Topics", placeholder="e.g., Topic A and Topic B"),
         gr.Radio(["Specific Examples", "Abstract Principles"], label="Level of Abstraction"),
         gr.CheckboxGroup([
             "Deepen Text Interpretation",
@@ -163,19 +201,19 @@ grouping_interface = gr.Interface(
             "Foster Consensus Building",
             "Provide Peer Support",
             "Explore & Address Conflicting Perspectives"
-        ], label="Discussion Goals"),
+        ], label="Discussion Goals (pick three to prioritize)"),
         gr.CheckboxGroup([
             "Debate: Argue conflicting understandings",
             "Informing: One student explains to others",
             "Co-construction: Collaboratively build a shared understanding",
             "Building Understanding Towards an Answer: Develop foundational concepts"
-        ], label="Interaction Mode")
+        ], label="Interaction Mode (select at most 2)")
     ],
     outputs=[
         gr.Textbox(label="Group Assignments (Bulleted List)", lines=10, placeholder="GPT output for group assignments will appear here."),
         gr.Textbox(label="Reflection Questions (Bulleted List)", lines=10, placeholder="GPT output for questions will appear here.")
     ],
-    title="Generate Groups & Reflection Questions"
+    title="Generate Groups & Rise-above Questions"
 )
 # Launch Gradio App
 gr.TabbedInterface(
