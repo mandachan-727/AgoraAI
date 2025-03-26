@@ -73,7 +73,7 @@ def synthesize():
 
 
 
-# Step 3: Final Grouping and Reflection Questions (based on criteria and Step 2 synthesis)
+# Step 3: Final Grouping and Rise-above Questions (based on criteria and Step 2 synthesis)
 @app.route('/group_and_questions', methods=['POST'])
 def group_and_questions():
     data = request.json
@@ -114,9 +114,9 @@ def group_and_questions():
     except json.JSONDecodeError:
         groups = []
 
-    # GPT prompt for reflection questions (Step 3b)
+    # GPT prompt for rise-above questions (Step 3b)
     question_prompt = f"""
-    Generate personalized reflection questions based on the groups and criteria:
+    Generate personalized rise-above questions based on the groups and criteria:
     - Goals: {discussion_goals}
     - Interaction Modes: {interaction_modes}
     - The generated groups are as follows: {json.dumps(groups)}
@@ -142,7 +142,7 @@ def group_and_questions():
 
         # Log the received outputs for debugging
         logging.debug(f"Generated groups: {grouping_output}")
-        logging.debug(f"Generated reflection questions: {questions_output}")
+        logging.debug(f"Generated rise-above questions: {questions_output}")
 
     except json.JSONDecodeError as e:
         # Log an error if JSON parsing fails

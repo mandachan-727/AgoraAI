@@ -142,6 +142,7 @@ def group_and_generate_questions(group_size, primary_topic, abstraction, discuss
     {group_output}
     Ensure that:
     - Each unique student is assigned only one question.
+    - Prompts are sometimes generated to put students from the same group in conversation with each other, e.g., Student 1 can be prompted to refer to/respond to Student 2's ideas (where relevant)
     Respond with a bulleted list in the following format:
     - Student1: Reflection question for Student1
     - Student2: Reflection question for Student2
