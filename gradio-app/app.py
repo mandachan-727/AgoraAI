@@ -3,9 +3,13 @@ import openai
 import json
 import logging
 import pandas as pd
+import os
 
 # Set OpenAI API Key (Do not hardcode; use environment variables in production)
-openai.api_key = "your-api-key-here"
+openai.api_key = os.getenv("API_TOKEN")
+
+if not openai.api_key:
+    raise ValueError("API_TOKEN environment variable is not set. Please set it before running the application.")
 
 logging.basicConfig(level=logging.DEBUG)
 
