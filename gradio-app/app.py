@@ -3,7 +3,7 @@ import openai
 import json
 import logging
 
-openai.api_key = "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"
+openai.api_key = "your-api-key-here"
 
 logging.basicConfig(level=logging.DEBUG)
 
