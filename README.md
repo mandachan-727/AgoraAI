@@ -85,5 +85,9 @@ With Agora, we’re on a mission to **increase the perceived and experienced val
 ✅ **Equity & Engagement at Scale** – Ensures inclusive and meaningful participation.  
 ✅ **Improved Value of Education** – Makes learning discussions impactful, not passive.  
 
-### 📬 Get in Touch
+## 📬 Get in Touch
 Project created by Amanda Tran, Sakshi Singh, Catherine Roeroe, Jyoti Poonia, and Ruchi Arora
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for more details.
