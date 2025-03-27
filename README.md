@@ -69,10 +69,6 @@ Agora **analyzes and clusters** key themes from pre-class contributions, identif
 
 ## 📈 Impact & Outcomes
 Agora streamlines the process of organizing discussions, ensuring every student is **empowered to participate** and contribute meaningfully. 
-
-✅ **30% increase** in student engagement with AI-driven discussion tools *(EDUCAUSE Review, 2023)*  
-✅ **25% reduction** in instructor workload through automated synthesis and grouping *(EDUCAUSE Review, 2023)*  
-
 Beyond higher education, Agora envisions **expanding into K-12 classrooms**, fostering deeper, more effective peer discussions across all levels of learning.
 
 ---
