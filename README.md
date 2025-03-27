@@ -1,43 +1,93 @@
-# Project Overview
-## ❗ Problem:
-Discussion-based university classrooms often fail to deliver consistent learning experiences. 
+# Agora AI
 
-### 🧠 Context:
-Especially in humanities and social sciences courses, learning relies heavily on peer dialogue and group discussion.
-But the quality of that learning experience is highly dependent on how engaged and intentional students’ peers are.
-When peers are unprepared, passive, or surface-level, discussions feel empty — leading to missed learning opportunities.
+## Transforming Classroom Discussions with AI-Driven Insights 💡
 
-### 🧩 The Orchestration Challenge (Instructor Pain Point):
-Instructors struggle to:
-See what students are thinking before class
-Form groups that lead to rich, engaging conversations
-Scaffold individualized participation in real time
-Traditional classroom management tools do not account for:
-Students’ prior contributions or knowledge
-Differences in discussion styles or ideologies
-Personalized entry points into complex texts or questions
+🎨 [Figma Prototype](https://www.figma.com/proto/jYAMaj5fVcTpi8QHVjkuc8/Hackathon?node-id=5-2&t=6fuIEuokW3RAtcZp-1&scaling=scale-down&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=5%3A2): Explore the user journey and interface.
 
-### 🎯 Learning Consequences:
-Uneven quality of group discussions across the class
-Lower student motivation and participation (especially for quieter students)
-Inconsistent learning outcomes — equity gap widens even within a single classroom
-Instructors spend time managing logistics instead of focusing on facilitation
+🧑‍💻 [GitHub Repository] (https://github.com/mandachan-727/AgoraAI): Access source code, setup instructions, and contributions.
 
-### 💸 Business Consequence (Perceived Value of Education):
-Classroom experiences serve as a core metric by which students evaluate the worth of their university education. When group discussions fall flat, students can feel like they’re not getting their money’s worth, regardless of how good the syllabus or instructor is. This leads to:
-Lower course satisfaction scores and course reviews
-Increased pressure on faculty and departments to “fix engagement” without added support
-Greater scrutiny of the cost vs. value proposition of a university education — especially in humanities and social sciences, where job-linked ROI is already under debate
-A tool that improves the consistency and quality of classroom experiences directly enhances the perceived and actual value of classroom time.
+🤖 [Hugging Face MVP] (https://huggingface.co/spaces/mandachan72/AgoraWAIAI25/): Try the live AI-powered discussion facilitator.
 
-## 🤖 Opportunity for AI:
-AI can act as a co-orchestrator, helping ensure every student is placed in a group where they can contribute meaningfully.
-AI can use prior student inputs (e.g., Perusall annotations, discussion histories) to:
-Form smarter small groups aligned to instructional goals (e.g., deepen ideas, challenge assumptions, broaden perspectives)
-Generate personalized nudges or prompts that help students enter discussions with purpose and confidence
+---
 
-## 🧪 This Project Aims to:
-Build a prototype that uses mock annotation data and instructor inputs to:
-Optimize student groupings for discussion-based learning
-Provide tailored entry points (nudges) for each student based on their previous thinking
-Deliver this through a lightweight, facilitator-facing interface that fits within existing class routines
+## 📂 Repository Structure
+```
+Resources/
+Sample Data/
+├── mock_data.json
+├── mock_data2.json
+
+gradio-app/
+├── app.py
+├── requirements.txt
+└── README.md
+
+jswebapp/
+├── app.py
+└── template/
+    └── index.html
+```
+---
+
+### 🚀 Problem Statement
+A single college course can cost over $7,000—nearly $500 per class. Yet, many students sit through lackluster discussions where disengaged peers and poorly structured conversations dilute the learning experience. 
+
+- **68% of students** say unprepared classmates weaken discussions. *(Source: NSSE, 2023)*  
+- **72% of instructors** struggle to form meaningful discussion groups without insights into student knowledge. *(Source: Chronicle of Higher Education, 2023)*  
+- Faculty spend **30% more time** managing discussions when they lack data on student participation. *(Source: Teaching and Learning Inquiry, 2022)*  
+
+Agora AI flips the script by transforming pre-class work into a strategic advantage, equipping instructors with the insights needed to spark **dynamic, inclusive, and high-impact discussions.**
+
+---
+
+## 🎯 How Agora Works
+
+### 1️⃣ Intelligent Data Collection
+Agora integrates seamlessly with an institution’s LMS to **automatically fetch** relevant class materials, student discussion posts, and social annotations.
+
+### 2️⃣ AI-Driven Synthesis
+Agora **analyzes and clusters** key themes from pre-class contributions, identifying students' interests and knowledge gaps. 
+
+### 3️⃣ Smart Grouping & Personalized Questions
+- Instructors set criteria based on **learning sciences frameworks** such as Interaction Modes and Knowledge Construction behaviors.
+- Agora’s **efficient GPT-powered algorithm** assigns students to groups and generates tailored “rise-above” discussion questions.
+
+### 4️⃣ Seamless Instructor Experience
+- Instructors receive structured discussion groups and personalized student prompts.
+- Questions can be **viewed, downloaded, or emailed** directly to students.
+
+---
+
+## 📈 How We Ensure Scalability
+- **Modular AI Design:** Decoupled AI logic allows seamless LMS integration.
+- **Instructor-Led, Not LMS-Dependent:** Functions as an enhancement layer, minimizing adoption friction.
+- **Cloud-Native & Lightweight:** Works as a standalone app or LMS add-on, scaling from single users to entire departments.
+- **Generalizable & Content-Driven:** Adapts to different institutions, course formats, and disciplines without relying on demographic data.
+- **Future-Proofed:** Can evolve into a broader ecosystem with benchmarking, peer feedback, and instructor analytics.
+
+---
+
+## 📈 Impact & Outcomes
+Agora streamlines the process of organizing discussions, ensuring every student is **empowered to participate** and contribute meaningfully. 
+
+✅ **30% increase** in student engagement with AI-driven discussion tools *(EDUCAUSE Review, 2023)*  
+✅ **25% reduction** in instructor workload through automated synthesis and grouping *(EDUCAUSE Review, 2023)*  
+
+Beyond higher education, Agora envisions **expanding into K-12 classrooms**, fostering deeper, more effective peer discussions across all levels of learning.
+
+---
+
+## 🔮 Future Vision
+Upcoming versions of Agora will implement **memoization**, allowing AI to reuse high-quality prompts across similar classroom contexts—**reducing token costs** while preserving personalization at scale.
+
+With Agora, we’re on a mission to **increase the perceived and experienced value of education—one peer discussion at a time.**
+
+---
+
+## 💡 Why Agora?
+✅ **Seamless LMS Integration** – Works with existing classroom structures effortlessly.  
+✅ **Equity & Engagement at Scale** – Ensures inclusive and meaningful participation.  
+✅ **Improved Value of Education** – Makes learning discussions impactful, not passive.  
+
+### 📬 Get in Touch
+Project created by Amanda Tran, Sakshi Singh, Catherine Roeroe, Jyoti Poonia, and Ruchi Arora
