@@ -4,9 +4,9 @@
 
 🎨 [Figma Prototype](https://www.figma.com/proto/jYAMaj5fVcTpi8QHVjkuc8/Hackathon?node-id=5-2&t=6fuIEuokW3RAtcZp-1&scaling=scale-down&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=5%3A2): Explore the user journey and interface.
 
-🧑‍💻 [GitHub Repository] (https://github.com/mandachan-727/AgoraAI): Access source code, setup instructions, and contributions.
+🧑‍💻 [GitHub Repository](https://github.com/mandachan-727/AgoraAI): Access source code, setup instructions, and contributions.
 
-🤖 [Hugging Face MVP] (https://huggingface.co/spaces/mandachan72/AgoraWAIAI25/): Try the live AI-powered discussion facilitator.
+🤖 [Hugging Face MVP](https://huggingface.co/spaces/mandachan72/AgoraWAIAI25/): Try the live AI-powered discussion facilitator.
 
 ---
 
