@@ -1,4 +1,4 @@
-# Gradio App for Synthesizing Annotations
+# Gradio App for Agora
 
 This project is a Gradio application that allows users to upload student annotations, synthesize key themes, and generate discussion groups and reflection questions based on the synthesized data. The application integrates with OpenAI's GPT model to analyze and process the annotations.
 
